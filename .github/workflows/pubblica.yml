@@ -1,0 +1,35 @@
+name: Pubblica sito
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Scarica le pagine dallo script Google
+        run: |
+          mkdir sito
+          U='https://script.google.com/macros/s/AKfycbwA13KahRGmKC_MnGNZZnbLMJO3M9XVBvCLgp1SkeSguiEy2o8gKLtl4W4TsS_v__awjw/exec?statico='
+          curl -fsSL "${U}pubblico" -o sito/index.html
+          curl -fsSL "${U}admin" -o sito/admin.html
+          curl -fsSL "${U}ingresso" -o sito/ingresso.html
+          for f in sito/*.html; do grep -q '<title>NYE 26/27' "$f" || { echo "pagina non valida: $f"; exit 1; }; done
+          touch sito/.nojekyll
+          ls -la sito
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: sito
+      - id: deploy
+        uses: actions/deploy-pages@v4
